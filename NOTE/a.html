@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Note Taker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .note-section, .output-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .output-box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .flashcard {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .question {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+            font-style: italic;
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: white;
+        }
+
+        .history-timestamp {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .history-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+
+        .type-summary { background-color: #e3f2fd; }
+        .type-flashcard { background-color: #e8f5e9; }
+        .type-questions { background-color: #fff3e0; }
+
+        .history-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .clear-history-btn {
+            background-color: #ff5722;
+            margin-top: 10px;
+        }
+
+        .clear-history-btn:hover {
+            background-color: #f4511e;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #312e2e;
+            border: none;
+            color: rgb(255, 255, 255);
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background-color: rgb(15, 175, 0);
+            border-bottom: 3px solid #4CAF50;
+        }
+
+        .export-btn {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .export-btn:hover {
+            background-color: #1976D2;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .bold-text {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .new-line {
+            display: block;
+            margin-top: 10px;
+            /* margin-bottom: 10px;
+            color: #34495e;
+            padding-left: 20px;
+            border-left: 3px solid #3498db;
+            font-weight: bold; */
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Note Taker</h1>
+    
+    <div class="container">
+        <div class="note-section">
+            <h2>Take Notes</h2>
+            <textarea id="noteInput" placeholder="Enter your notes here..."></textarea>
+            <div>
+                <button onclick="processNote('summarize')">Summarize</button>
+                <button onclick="processNote('flashcard')">Create Flashcard</button>
+                <button onclick="processNote('questions')">Generate Questions</button>
+            </div>
+            <div id="error-message"></div>
+            <div id="loading" class="loading">Processing...</div>
+        </div>
+
+        <div class="output-section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('current')">Current Output</button>
+                <button class="tab" onclick="switchTab('history')">History</button>
+            </div>
+            <div id="currentOutput">
+                <h2>AI Output</h2>
+                <div id="outputArea"></div>
+            </div>
+
+            <div id="historyOutput" style="display: none;">
+                <div class="history-header">
+                    <h2>History</h2>
+                    <div class="history-actions">
+                        <button class="export-btn" onclick="exportToPDF()">Export to PDF</button>
+                        <button class="clear-history-btn" onclick="clearHistory()">Clear All History</button>
+                    </div>
+                </div>
+                <div id="historyArea"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your actual API key
+        const API_KEY = 'AIzaSyC5VpC4idAiZI3V6DUrCVRN1eAG2km4yJY';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+
+        function processText(text) {
+            // First handle double asterisks (bold)
+            text = text.replace(/\*\*(.*?)\*\*/g, '<br><br><span class="bold-text">$1</span>');
+            
+            // Then handle single asterisks (new line)
+            text = text.replace(/\*/g, '<br><span class="new-line"></span>'+"- ");
+            
+            //tex = text.replace()
+            
+            
+            return text;
+        }
+
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            const currentTab = document.querySelector(`.tab:nth-child(${tab === 'current' ? '1' : '2'})`);
+            currentTab.classList.add('active');
+
+            document.getElementById('currentOutput').style.display = tab === 'current' ? 'block' : 'none';
+            document.getElementById('historyOutput').style.display = tab === 'history' ? 'block' : 'none';
+            
+            if (tab === 'history') {
+                displayHistory();
+            }
+        }
+
+        function saveToHistory(action, content, originalNote) {
+            const history = JSON.parse(localStorage.getItem('noteHistory') || '[]');
+            history.unshift({
+                timestamp: new Date().toISOString(),
+                action,
+                content,
+                originalNote
+            });
+            localStorage.setItem('noteHistory', JSON.stringify(history));
+        }
+
+        function displayHistory() {
+            const historyArea = document.getElementById('historyArea');
+            const history = JSON.parse(localStorage.getItem('noteHistory') || '[]');
+            window.jsPDF = window.jspdf.jsPDF;
+            
+            historyArea.innerHTML = history.map((item, index) => `
+                <div class="history-item">
+                    <div class="history-timestamp">
+                        ${new Date(item.timestamp).toLocaleString()}
+                    </div>
+                    <div class="history-type type-${item.action}">
+                        ${item.action.charAt(0).toUpperCase() + item.action.slice(1)}
+                    </div>
+                    <div class="history-content">
+                        ${formatOutput(item.action, item.content)}
+                    </div>
+                    <div class="history-controls">
+                        <button onclick="restoreNote('${index}')">Restore Note</button>
+                        <button class="delete-btn" onclick="deleteHistoryItem(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function restoreNote(index) {
+            const history = JSON.parse(localStorage.getItem('noteHistory') || '[]');
+            const item = history[index];
+            document.getElementById('noteInput').value = item.originalNote;
+            switchTab('current');
+        }
+
+        function deleteHistoryItem(index) {
+            const history = JSON.parse(localStorage.getItem('noteHistory') || '[]');
+            history.splice(index, 1);
+            localStorage.setItem('noteHistory', JSON.stringify(history));
+            displayHistory();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                localStorage.removeItem('noteHistory');
+                displayHistory();
+            }
+        }
+
+        function formatOutput(action, content) {
+            switch(action) {
+                case 'summarize':
+                    return `<div class="output-box"><h3>Summary</h3>${processText(content)}</div>`;
+                case 'flashcard':
+                    const flashcards = content.split('\n\n');
+                    return '<h3>Flashcards</h3>' + flashcards.map(card => 
+                        `<div class="flashcard">${processText(card)}</div>`
+                    ).join('');
+                case 'questions':
+                    const questions = content.split('\n');
+                    return '<h3>Study Questions</h3>' + questions.map(q => 
+                        `<div class="question">${processText(q)}</div>`
+                    ).join('');
+                default:
+                    return content;
+            }
+        }
+
+        async function processNote(action) {
+            const noteText = document.getElementById('noteInput').value.trim();
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error-message');
+            const outputArea = document.getElementById('outputArea');
+
+            if (!noteText) {
+                errorDiv.textContent = 'Please enter some notes first.';
+                return;
+            }
+
+            errorDiv.textContent = '';
+            loadingDiv.style.display = 'block';
+            
+            let prompt;
+            switch(action) {
+                case 'summarize':
+                    prompt = `Summarize the following notes in a clear and concise way:\n${noteText}`;
+                    break;
+                case 'flashcard':
+                    prompt = `Create 3 flashcards from the following notes. Format as Question: and Answer:\n${noteText}`;
+                    break;
+                case 'questions':
+                    prompt = `Generate 5 study questions based on these notes:\n${noteText}`;
+                    break;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const data = await response.json();
+                const generatedText = data.candidates[0].content.parts[0].text;
+
+                // Save to history
+                saveToHistory(action, generatedText, noteText);
+                
+                // Display in current output
+                outputArea.innerHTML = formatOutput(action, generatedText);
+                
+                // Switch to current output tab
+                switchTab('current');
+                
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred while processing your request. Please try again.';
+                console.error('Error:', error);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function exportToPDF() {
+            const history = JSON.parse(localStorage.getItem('noteHistory') || '[]');
+            if (history.length === 0) {
+                alert('No history to export.');
+                return;
+            }
+
+            // Initialize PDF document
+            const doc = new jsPDF();
+            let yPos = 20;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 20;
+            const maxWidth = pageWidth - 2 * margin;
+
+            // Add title
+            doc.setFontSize(20);
+            doc.text('AI Note Taker - History Export', margin, yPos);
+            yPos += 15;
+
+            // Function to add a new page if needed
+            function checkNewPage(height) {
+                if (yPos + height > doc.internal.pageSize.getHeight() - margin) {
+                    doc.addPage();
+                    yPos = 20;
+                    return true;
+                }
+                return false;
+            }
+
+            // Function to handle text wrapping
+            function addWrappedText(text, fontSize) {
+                doc.setFontSize(fontSize);
+                const lines = doc.splitTextToSize(text, maxWidth);
+                checkNewPage(lines.length * fontSize / 72 * 25.4); // Convert pt to mm
+                doc.text(lines, margin, yPos);
+                yPos += lines.length * fontSize / 72 * 25.4;
+            }
+
+            // Process each history item
+            history.forEach((item, index) => {
+                checkNewPage(60); // Check if we need a new page for this item
+
+                // Add timestamp
+                doc.setFontSize(12);
+                doc.setTextColor(100);
+                const timestamp = new Date(item.timestamp).toLocaleString();
+                doc.text(`Date: ${timestamp}`, margin, yPos);
+                yPos += 8;
+
+                // Add type of content
+                doc.setFontSize(14);
+                doc.setTextColor(0);
+                doc.setFont(undefined, 'bold');
+                const contentType = item.action.charAt(0).toUpperCase() + item.action.slice(1);
+                doc.text(`Type: ${contentType}`, margin, yPos);
+                yPos += 8;
+
+                // Add original note
+                doc.setFont(undefined, 'bold');
+                doc.text('Original Note:', margin, yPos);
+                yPos += 8;
+                doc.setFont(undefined, 'normal');
+                addWrappedText(item.originalNote, 12);
+                yPos += 5;
+
+                // Add generated content
+                doc.setFont(undefined, 'bold');
+                doc.text('Generated Content:', margin, yPos);
+                yPos += 8;
+                doc.setFont(undefined, 'normal');
+                
+                // Handle different types of content
+                switch(item.action) {
+                    case 'flashcard':
+                        const flashcards = item.content.split('\n\n');
+                        flashcards.forEach((card, idx) => {
+                            checkNewPage(20);
+                            addWrappedText(`Flashcard ${idx + 1}:`, 12);
+                            yPos += 2;
+                            addWrappedText(card, 12);
+                            yPos += 5;
+                        });
+                        break;
+                    
+                    case 'questions':
+                        const questions = item.content.split('\n');
+                        questions.forEach((question, idx) => {
+                            checkNewPage(15);
+                            addWrappedText(`${idx + 1}. ${question}`, 12);
+                            yPos += 5;
+                        });
+                        break;
+                    
+                    default: // summary
+                        addWrappedText(item.content, 12);
+                }
+
+                // Add separator
+                yPos += 10;
+                if (index < history.length - 1) {
+                    checkNewPage(10);
+                    doc.setDrawColor(200);
+                    doc.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 10;
+                }
+            });
+
+            // Save the PDF
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            doc.save(`ai-note-taker-history-${timestamp}.pdf`);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Note Taker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .note-section, .output-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .output-box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .flashcard {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .question {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+            font-style: italic;
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Note Taker</h1>
+    
+    <div class="container">
+        <div class="note-section">
+            <h2>Take Notes</h2>
+            <textarea id="noteInput" placeholder="Enter your notes here..."></textarea>
+            <div>
+                <button onclick="processNote('summarize')">Summarize</button>
+                <button onclick="processNote('flashcard')">Create Flashcard</button>
+                <button onclick="processNote('questions')">Generate Questions</button>
+            </div>
+            <div id="error-message"></div>
+            <div id="loading" class="loading">Processing...</div>
+        </div>
+
+        <div class="output-section">
+            <h2>AI Output</h2>
+            <div id="outputArea"></div>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your actual API key
+        const API_KEY = 'AIzaSyC5VpC4idAiZI3V6DUrCVRN1eAG2km4yJY';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+
+        function convertBoldText(text) {
+            return text.replace(/\*\*(.*?)\*\*/g, '<span class="bold-text">$1</span>');
+        }
+
+        async function processNote(action) {
+            const noteText = document.getElementById('noteInput').value.trim();
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error-message');
+            const outputArea = document.getElementById('outputArea');
+
+            if (!noteText) {
+                errorDiv.textContent = 'Please enter some notes first.';
+                return;
+            }
+
+            errorDiv.textContent = '';
+            loadingDiv.style.display = 'block';
+            
+            let prompt;
+            switch(action) {
+                case 'summarize':
+                    prompt = `Summarize the following notes in a clear and concise way:\n${noteText}`;
+                    break;
+                case 'flashcard':
+                    prompt = `Create 3 flashcards from the following notes. Format as Question: and Answer:\n${noteText}`;
+                    break;
+                case 'questions':
+                    prompt = `Generate 5 study questions based on these notes:\n${noteText}`;
+                    break;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const data = await response.json();
+                const generatedText = data.candidates[0].content.parts[0].text;
+
+                // Format the output based on the action
+                let formattedOutput = '';
+                switch(action) {
+                    case 'summarize':
+                        formattedOutput = `<div class="output-box"><h3>Summary</h3>${convertBoldText(generatedText)}</div>`;
+                        break;
+                    case 'flashcard':
+                        const flashcards = generatedText.split('\n\n');
+                        formattedOutput = '<h3>Flashcards</h3>' + flashcards.map(card => 
+                            `<div class="flashcard">${convertBoldText(card)}</div>`
+                        ).join('');
+                        break;
+                    case 'questions':
+                        const questions = generatedText.split('\n');
+                        formattedOutput = '<h3>Study Questions</h3>' + questions.map(q => 
+                            `<div class="question">${convertBoldText(q)}</div>`
+                        ).join('');
+                        break;
+                }
+
+                outputArea.innerHTML = formattedOutput;
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred while processing your request. Please try again.';
+                console.error('Error:', error);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
