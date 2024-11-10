@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Time Management - Study Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .timer {
+            font-size: 3rem;
+            margin-top: 20px;
+        }
+
+        .controls button {
+            font-size: 1rem;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .controls button.start {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .controls button.stop {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .sessions-log {
+            margin-top: 30px;
+            font-size: 1.2rem;
+        }
+
+        .summary {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            color: #555;
+        }
+        #studyChart {
+            width: 80%; 
+            max-width: 300px; 
+            height: 200px; 
+        }
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            width: 100%; 
+            max-width: 400px; 
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Study Session Tracker</h1>
+    <div class="timer">00:00:00</div>
+
+    <div class="controls">
+        <button class="start" onclick="startSession()">Start Session</button>
+        <button class="stop" onclick="stopSession()" disabled>Stop Session</button>
+    </div>
+
+    <div class="sessions-log">
+        <h2>Study Sessions</h2>
+        <ul id="session-list"></ul>
+    </div>
+
+    <div class="summary">
+        <h2>Productivity Summary</h2>
+        <p>Total Study Time: <span id="total-time">0</span> seconds</p>
+        <div class="chart-container">
+            <canvas id="studyChart"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+        let startTime, timerInterval;
+        let totalStudyTime = 0;
+        let sessionDurations = [];
+        let sessionLabels = [];
+    
+        // Initialize the chart
+        const ctx = document.getElementById('studyChart').getContext('2d');
+        const studyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sessionLabels,
+                datasets: [{
+                    label: 'Study Session Duration (seconds)',
+                    data: sessionDurations,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    
+        function formatTime(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    
+        function startSession() {
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            document.querySelector('.start').disabled = true;
+            document.querySelector('.stop').disabled = false;
+        }
+    
+        function updateTimer() {
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            document.querySelector('.timer').textContent = formatTime(elapsedTime);
+        }
+    
+        function stopSession() {
+            clearInterval(timerInterval);
+            const sessionTime = Math.floor((Date.now() - startTime) / 1000);
+            totalStudyTime += sessionTime;
+    
+            // Log the session
+            const sessionList = document.getElementById('session-list');
+            const sessionItem = document.createElement('li');
+            sessionItem.textContent = `Session: ${formatTime(sessionTime)}`;
+            sessionList.appendChild(sessionItem);
+    
+            // Update total time
+            document.getElementById('total-time').textContent = totalStudyTime;
+    
+            // Add session to the chart
+            sessionLabels.push(`Session ${sessionLabels.length + 1}`);
+            sessionDurations.push(sessionTime);
+            studyChart.update();
+    
+            // Reset timer
+            document.querySelector('.timer').textContent = '00:00:00';
+            document.querySelector('.start').disabled = false;
+            document.querySelector('.stop').disabled = true;
+        }
+    </script>
+    
+
+</body>
+</html>
