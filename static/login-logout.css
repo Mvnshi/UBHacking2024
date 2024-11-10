@@ -1,0 +1,29 @@
+.button {
+    display: inline-block;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 30px; 
+    background-color: #4CAF50; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    font-size: 1rem; 
+}
+
+.button:hover {
+    background-color: #45a049; 
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); 
+}
+
+.login-button {
+    background-color: #4CAF50; 
+}
+
+.logout-button {
+    background-color: #d9534f; 
+}
+
+.logout-button:hover {
+    background-color: #c9302c; 
+}
