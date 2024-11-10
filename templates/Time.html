@@ -5,18 +5,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>Time Management - Study Tracker</title>
-    <link rel="stylesheet" href="Time.css">
+    <style>
+        :root {
+            --background: #e0e5ec;
+            --text-primary: #2d4263;
+            --neu-shadow: 
+                8px 8px 15px #a3b1c6,
+                -8px -8px 15px #ffffff;
+            --neu-shadow-inset:
+                inset 4px 4px 8px #a3b1c6,
+                inset -4px -4px 8px #ffffff;
+        }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2 {
+            margin-bottom: 1rem;
+        }
+
+        .timer {
+            font-size: 3rem;
+            margin: 2rem 0;
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: var(--neu-shadow);
+            display: inline-block;
+        }
+
+        .controls {
+            margin: 2rem 0;
+        }
+
+        #session-toggle {
+            font-size: 1rem;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            color: var(--text-primary);
+            background-color: var(--background);
+            box-shadow: var(--neu-shadow);
+            transition: all 0.3s ease;
+        }
+
+        #session-toggle:hover {
+            box-shadow: var(--neu-shadow-inset);
+        }
+
+        #session-toggle:active {
+            box-shadow: var(--neu-shadow-inset);
+            transform: scale(0.95);
+        }
+
+        .sessions-log, .summary {
+            width: 80%;
+            max-width: 600px;
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: var(--neu-shadow);
+        }
+
+        #session-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #session-list li {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 10px;
+            box-shadow: var(--neu-shadow-inset);
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: var(--neu-shadow);
+        }
+
+        #studyChart {
+            width: 100%;
+            height: auto;
+        }
+        .center-container {
+            display: flex;              /* Use flexbox for alignment */
+            flex-direction: column;     /* Stack items vertically */
+            align-items: center;        /* Center items horizontally */
+            justify-content: center;    /* Center items vertically (if height is defined) */
+            /* height: vh;             Optional: Set height to full viewport height */
+            height: 20%;
+        }
+    </style>
 </head>
 <body>
+    <div class="center-container">
+        <a style="text-align: center;" href="/index.html">
+            <img src="{{ url_for('static', filename='img/MindBoxnobg.png') }}" style="width: 8%;" >
+        </a>
+        
+        <h1>Study Session Tracker</h1>
+    </div>
 
-    <h1>Study Session Tracker</h1>
+
     <div class="timer">00:00:00</div>
 
     <div class="controls">
-        <button id="session-toggle" class="start" onclick="toggleSession()">Start Session</button>
+        <button id="session-toggle" onclick="toggleSession()">Start Session</button>
     </div>
-    
 
     <div class="sessions-log">
         <h2>Study Sessions</h2>
@@ -29,9 +144,7 @@
         <div class="chart-container">
             <canvas id="studyChart"></canvas>
         </div>
-
     </div>
-
     <script>
         let startTime, timerInterval;
         let totalStudyTime = 0;
@@ -115,7 +228,5 @@
         }
         
     </script>
-    
-
 </body>
 </html>

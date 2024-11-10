@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindbox Notes</title>
+    <style>
+        /* General styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #e0e5ec;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #444;
+        }
+
+        /* Container layout */
+        .container {
+            display: flex;
+            gap: 30px;
+            justify-content: space-between;
+        }
+
+        /* Neumorphic card style */
+        .editor, .folders, .notes {
+            flex: 1;
+            background-color: #e0e5ec;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 9px 9px 16px #b8bcc2, -9px -9px 16px #ffffff;
+        }
+
+        /* Button styling */
+        button {
+            background-color: #69b3a2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #57a08c;
+        }
+
+        /* Textarea styling */
+        textarea {
+            width: 100%;
+            height: 200px;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: inset 5px 5px 10px #b8bcc2, inset -5px -5px 10px #ffffff;
+            font-size: 14px;
+            color: #555;
+            resize: vertical;
+        }
+
+        /* Folders and notes list styling */
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            background-color: #f0f4f8;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .folder, .note {
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            background-color: red;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        .folder-name {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>MindBox Study - Note Editor with Folders</h1>
+
+    <div class="container">
+        <!-- Folders List -->
+        <div class="folders">
+            <h2>Folders</h2>
+            <ul id="foldersList"></ul>
+            <input type="text" id="folderInput" placeholder="New folder name">
+            <button onclick="addFolder()">Add Folder</button>
+        </div>
+
+        <!-- Notes List -->
+        <div class="notes">
+            <textarea id="noteInput" placeholder="Write your notes here..."></textarea>
+            <button onclick="saveNote()">Save Note</button>
+
+            <h2>Notes in <span id="currentFolderName">All Notes</span></h2>
+            <ul id="notesList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Initialize folders and notes
+        let folders = JSON.parse(localStorage.getItem('folders')) || {};
+        let currentFolder = 'All Notes';
+
+        // Load folders and notes
+        function loadFolders() {
+            const foldersList = document.getElementById('foldersList');
+            foldersList.innerHTML = ''; // Clear current folders list
+
+            // Add the "All Notes" folder only if it's not present
+            if (!folders['All Notes']) {
+                folders['All Notes'] = [];
+            }
+
+            // Create folder list dynamically
+            for (let folderName in folders) {
+                const li = document.createElement('li');
+                li.classList.add('folder');
+
+                // Folder name display
+                const folderNameText = document.createElement('span');
+                folderNameText.classList.add('folder-name');
+                folderNameText.textContent = folderName;
+
+                // Delete button for folder
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('delete-btn');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteFolder(folderName);
+
+                // Append the folder name and delete button to the list item
+                li.appendChild(folderNameText);
+                li.appendChild(deleteButton);
+                li.onclick = () => selectFolder(folderName);
+
+                foldersList.appendChild(li);
+            }
+        }
+
+        // Add a new folder
+        function addFolder() {
+            const folderInput = document.getElementById('folderInput').value.trim();
+            if (folderInput && !folders[folderInput]) {
+                folders[folderInput] = []; // Add new folder with empty notes
+                localStorage.setItem('folders', JSON.stringify(folders));
+                document.getElementById('folderInput').value = ''; // Clear input
+                loadFolders(); // Reload folder list
+            } else {
+                alert('Folder already exists or input is empty.');
+            }
+        }
+
+        // Select folder to view notes
+        function selectFolder(folderName) {
+            currentFolder = folderName;
+            document.getElementById('currentFolderName').textContent = folderName;
+            loadNotes(); // Reload notes for the selected folder
+        }
+
+        // Save a new note
+        function saveNote() {
+            const noteInput = document.getElementById('noteInput').value.trim();
+            if (noteInput) {
+                folders[currentFolder].push(noteInput); // Add note to the current folder
+                localStorage.setItem('folders', JSON.stringify(folders));
+                document.getElementById('noteInput').value = ''; // Clear input
+                loadNotes(); // Reload notes
+            }
+        }
+
+        // Load notes for the selected folder
+        function loadNotes() {
+            const notesList = document.getElementById('notesList');
+            notesList.innerHTML = ''; // Clear current notes list
+
+            folders[currentFolder].forEach((note, index) => {
+                const li = document.createElement('li');
+                li.classList.add('note');
+                li.textContent = note;
+                notesList.appendChild(li);
+            });
+        }
+
+        // Delete a folder (along with its notes)
+        function deleteFolder(folderName) {
+            if (folderName !== 'All Notes') {
+                // Remove folder from storage
+                delete folders[folderName];
+                localStorage.setItem('folders', JSON.stringify(folders));
+
+                // Reload the folder list
+                loadFolders();
+
+                // If the deleted folder was the current folder, reset to "All Notes"
+                if (currentFolder === folderName) {
+                    currentFolder = 'All Notes';
+                    document.getElementById('currentFolderName').textContent = 'All Notes';
+                    loadNotes();
+                }
+            } else {
+                alert('Cannot delete "All Notes" folder.');
+            }
+        }
+
+        // Initialize app by loading folders and notes on page load
+        window.onload = function() {
+            loadFolders();
+            selectFolder('All Notes');
+        };
+    </script>
+</body>
+</html>

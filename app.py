@@ -53,5 +53,25 @@ def logout():
         f'https://{app.config["AUTH0_DOMAIN"]}/v2/logout?returnTo={url_for("home", _external=True)}&client_id={app.config["AUTH0_CLIENT_ID"]}'
     )
 
+@app.route('/take-note')
+def take_note():
+    return render_template('newnotes.html')
+
+@app.route('/view-note')
+def view_note():
+    return render_template('notes.html')
+
+@app.route('/mind-map')
+def mind_map():
+    return render_template('graph.html')
+
+@app.route('/time-management')
+def time_management():
+    return render_template('Time.html')
+
+@app.route('/syllabus-scanner')
+def syllabus_scanner():
+    return render_template('sylabus.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

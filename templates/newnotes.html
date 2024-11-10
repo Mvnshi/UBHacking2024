@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindbox Notes</title>
+    <style>
+        /* General styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #e0e5ec;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #444;
+        }
+
+        /* Container layout */
+        .container {
+            display: flex;
+            gap: 30px;
+            justify-content: space-between;
+        }
+
+        /* Neumorphic card style */
+        .editor, .folders, .notes {
+            flex: 1;
+            background-color: #e0e5ec;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 9px 9px 16px #b8bcc2, -9px -9px 16px #ffffff;
+        }
+
+        /* Button styling */
+        button {
+            background-color: #69b3a2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #57a08c;
+        }
+
+        /* Textarea styling */
+        textarea {
+            width: 100%;
+            height: 200px;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: inset 5px 5px 10px #b8bcc2, inset -5px -5px 10px #ffffff;
+            font-size: 14px;
+            color: #555;
+            resize: vertical;
+        }
+
+        /* Folders and notes list styling */
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            background-color: #f0f4f8;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .folder, .note {
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            background-color: red;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        .folder-name {
+            flex: 1;
+        }
+
+        .summary-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .summary-content {
+            background-color: #e0e5ec;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 9px 9px 16px #b8bcc2, -9px -9px 16px #ffffff;
+        }
+
+        .close-btn {
+            float: right;
+            cursor: pointer;
+        }
+
+        .note-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .note-content {
+            background-color: #e0e5ec;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 9px 9px 16px #b8bcc2, -9px -9px 16px #ffffff;
+        }
+
+        .close-btn {
+            float: right;
+            cursor: pointer;
+        }
+
+        .note-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .note-actions button {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        #notePageContent {
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        
+       
+
+
+        .flashcard-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .flashcard-container {
+            background-color: #e0e5ec;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 9px 9px 16px #b8bcc2, -9px -9px 16px #ffffff;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 300px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard:hover .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f4f8;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-container button {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .questions-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .questions-container {
+            background-color: #e0e5ec;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 9px 9px 16px #b8bcc2, -9px -9px 16px #ffffff;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .questions-container ol {
+            padding-left: 20px;
+        }
+
+        .questions-container li {
+            margin-bottom: 10px;
+        }
+
+        .questions-container button {
+            margin-top: 20px;
+            width: 100%;
+        }
+        .center-container {
+            display: flex;              /* Use flexbox for alignment */
+            flex-direction: column;     /* Stack items vertically */
+            align-items: center;        /* Center items horizontally */
+            justify-content: center;    /* Center items vertically (if height is defined) */
+            /* height: vh;             Optional: Set height to full viewport height */
+        }
+    </style>
+</head>
+<body>
+    <div class="center-container">
+        <a style="text-align: center;" href="/index.html">
+            <img src="{{ url_for('static', filename='img/MindBoxnobg.png') }}" style="width: 8%;">
+        </a>
+        <h1>Note Editor with Folders</h1>
+    </div>
+    
+    
+    <div class="container">
+        <!-- Folders List -->
+        <div class="folders">
+            <h2>Folders</h2>
+            <ul id="foldersList"></ul>
+            <textarea type="text" id="folderInput" style="width: 100px; height: 50px;" placeholder="New folder name"></textarea>
+            <button onclick="addFolder()">Add Folder</button>
+        </div>
+
+        <!-- Notes List -->
+        <div class="notes">
+            <textarea id="noteInput" placeholder="Write your notes here..."></textarea>
+            <button onclick="saveNote()">Save Note</button>
+
+            <h2>Notes in <span id="currentFolderName">All Notes</span></h2>
+            <ul id="notesList"></ul>
+        </div>
+
+        <!-- Flashcard pop-up -->
+        <div id="flashcardPopup" class="flashcard-popup">
+            <div class="flashcard-container">
+                <div class="flashcard">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <h3>Question:</h3>
+                            <p id="flashcardQuestion"></p>
+                        </div>
+                        <div class="flashcard-back">
+                            <h3>Answer:</h3>
+                            <p id="flashcardAnswer"></p>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeFlashcardPopup()">Close</button>
+            </div>
+        </div>
+
+        
+    
+    
+    </div>
+
+     <!-- New div for the note page -->
+     <div id="notePage" class="note-page">
+        <div class="note-content">
+            <span class="close-btn" onclick="closeNotePage()">×</span>
+            <h2>Note</h2>
+            <div id="notePageContent"></div>
+            <div class="note-actions">
+                <button onclick="editNote()">Edit</button>
+                <button onclick="summarizeNote()">Summarize</button>
+                <button onclick="createFlashcard()">Create Flashcard</button>
+                <button onclick="generateQuestions()">Generate Questions</button>
+            </div>
+        </div>
+    </div>
+    <div id="summaryPage" class="summary-page">
+        <div class="summary-content">
+            <span class="close-btn" onclick="closeSummaryPage()">×</span>
+            <h2>Note Summary</h2>
+            <p id="summaryContent"></p>
+        </div>
+    </div>
+    <div id="questionsPopup" class="questions-popup">
+        <div class="questions-container">
+            <h3>Generated Questions:</h3>
+            <ol id="questionsList"></ol>
+            <button onclick="closeQuestionsPopup()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize folders and notes
+        let folders = JSON.parse(localStorage.getItem('folders')) || {};
+        let currentFolder = 'All Notes';
+        let currentNoteIndex = -1;
+        const API_KEY = 'AIzaSyC5VpC4idAiZI3V6DUrCVRN1eAG2km4yJY';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+
+// Load notes
+function loadNotes() {
+    const notesList = document.getElementById('notesList');
+    notesList.innerHTML = ''; // Clear current notes list
+    folders[currentFolder].forEach((note, index) => {
+        const li = document.createElement('li');
+        li.classList.add('note');
+        
+        // Process the note for display
+        const processedNote = processNoteForDisplay(note);
+        
+        li.innerHTML = processedNote.substring(0, 50) + (processedNote.length > 50 ? '...' : '');
+        li.onclick = () => showNotePage(index);
+        notesList.appendChild(li);
+    });
+}
+
+// Show note page
+function showNotePage(index) {
+    currentNoteIndex = index;
+    const note = folders[currentFolder][index];
+    document.getElementById('notePage').style.display = 'flex';
+    
+    // Process the note for display
+    const processedNote = processNoteForDisplay(note);
+    
+    document.getElementById('notePageContent').innerHTML = processedNote;
+}
+
+// Helper function to process note for display
+function processNoteForDisplay(note) {
+    // Convert ** to <strong> tags for HTML display
+    return note.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+
+        // Function to close note page
+        function closeNotePage() {
+            document.getElementById('notePage').style.display = 'none';
+        }
+
+        // Function to edit note
+        function editNote() {
+            const noteContent = document.getElementById('notePageContent');
+            const currentText = noteContent.textContent;
+            noteContent.innerHTML = `<textarea id="editNoteText" style="width: 90%; height: 200px;">${currentText}</textarea>`;
+            noteContent.innerHTML += '<button onclick="saveEditedNote()">Save</button>';
+        }
+
+        // Function to save edited note
+        function saveEditedNote() {
+            const editedText = document.getElementById('editNoteText').value;
+            folders[currentFolder][currentNoteIndex] = editedText;
+            localStorage.setItem('folders', JSON.stringify(folders));
+            document.getElementById('notePageContent').textContent = editedText;
+            loadNotes(); // Refresh the notes list
+        }
+
+        // Function to summarize note
+        function summarizeNote() {
+            const note = folders[currentFolder][currentNoteIndex];
+            showSummaryPage(note);
+        }
+
+        // // Function to create flashcard
+        // async function createFlashcard() {
+        //     const note = folders[currentFolder][currentNoteIndex];
+        //     const flashcard = await generateFlashcardWithGemini(note);
+        //     displayFlashcard(flashcard);
+        // }
+
+        // Function to generate questions
+        function generateQuestions() {
+            const note = folders[currentFolder][currentNoteIndex];
+            // Implement question generation logic here
+            alert("Question generation feature to be implemented");
+        }
+
+        // Load folders and notes
+        function loadFolders() {
+            const foldersList = document.getElementById('foldersList');
+            foldersList.innerHTML = ''; // Clear current folders list
+
+            // Add the "All Notes" folder only if it's not present
+            if (!folders['All Notes']) {
+                folders['All Notes'] = [];
+            }
+
+            // Create folder list dynamically
+            for (let folderName in folders) {
+                const li = document.createElement('li');
+                li.classList.add('folder');
+
+                // Folder name display
+                const folderNameText = document.createElement('span');
+                folderNameText.classList.add('folder-name');
+                folderNameText.textContent = folderName;
+
+                // Delete button for folder
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('delete-btn');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteFolder(folderName);
+
+                // Append the folder name and delete button to the list item
+                li.appendChild(folderNameText);
+                li.appendChild(deleteButton);
+                li.onclick = () => selectFolder(folderName);
+
+                foldersList.appendChild(li);
+            }
+        }
+
+        // Add a new folder
+        function addFolder() {
+            const folderInput = document.getElementById('folderInput').value.trim();
+            if (folderInput && !folders[folderInput]) {
+                folders[folderInput] = []; // Add new folder with empty notes
+                localStorage.setItem('folders', JSON.stringify(folders));
+                document.getElementById('folderInput').value = ''; // Clear input
+                loadFolders(); // Reload folder list
+            } else {
+                alert('Folder already exists or input is empty.');
+            }
+        }
+
+        // Select folder to view notes
+        function selectFolder(folderName) {
+            currentFolder = folderName;
+            document.getElementById('currentFolderName').textContent = folderName;
+            loadNotes(); // Reload notes for the selected folder
+        }
+
+async function saveNote() {
+    const noteInput = document.getElementById('noteInput').value.trim();
+    if (noteInput) {
+        // Analyze the note with Gemini
+        const analyzedNote = await analyzeNoteWithGemini(noteInput);
+        
+        // Convert <b> tags to ** for consistent storage
+        const processedNote = analyzedNote.replace(/<b>(.*?)<\/b>/g, '**$1**');
+        
+        folders[currentFolder].push(processedNote);
+        localStorage.setItem('folders', JSON.stringify(folders));
+        document.getElementById('noteInput').value = ''; // Clear input
+        loadNotes(); // Reload notes
+    }
+}
+
+// Analyze note with Gemini and bold key terms
+async function analyzeNoteWithGemini(note) {
+    try {
+        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `Analyze the following notes taken in class and identify key terms or topics. Return the  note with the key terms wrapped in <b> tags. Make sure not to get rid of information This is the Note: ${note}`
+                    }]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        const analyzedNote = data.candidates[0].content.parts[0].text;
+
+        // Extract the part of the response that contains the note with bold tags
+        const startIndex = analyzedNote.indexOf(note.substring(0, 20));
+        const endIndex = analyzedNote.lastIndexOf(note.substring(note.length - 20));
+        const extractedNote = analyzedNote.substring(startIndex, endIndex + 20);
+
+        return extractedNote;
+    } catch (error) {
+        console.error('Error:', error);
+        return note; // Return original note if analysis fails
+    }
+}
+
+
+        // Load notes for the selected folder
+        // function loadNotes() {
+        //     const notesList = document.getElementById('notesList');
+        //     notesList.innerHTML = ''; // Clear current notes list
+
+        //     folders[currentFolder].forEach((note, index) => {
+        //         const li = document.createElement('li');
+        //         li.classList.add('note');
+        //         li.textContent = note;
+        //         notesList.appendChild(li);
+        //     });
+        // }
+
+        // Delete a folder (along with its notes)
+        function deleteFolder(folderName) {
+            if (folderName !== 'All Notes') {
+                // Remove folder from storage
+                delete folders[folderName];
+                localStorage.setItem('folders', JSON.stringify(folders));
+
+                // Reload the folder list
+                loadFolders();
+
+                // If the deleted folder was the current folder, reset to "All Notes"
+                if (currentFolder === folderName) {
+                    currentFolder = 'All Notes';
+                    document.getElementById('currentFolderName').textContent = 'All Notes';
+                    loadNotes();
+                }
+            } else {
+                alert('Cannot delete "All Notes" folder.');
+            }
+        }
+
+        // Initialize app by loading folders and notes on page load
+        window.onload = function() {
+            loadFolders();
+            selectFolder('All Notes');
+        };
+
+        // function loadNotes() {
+        //     const notesList = document.getElementById('notesList');
+        //     notesList.innerHTML = ''; // Clear current notes list
+
+        //     folders[currentFolder].forEach((note, index) => {
+        //         const li = document.createElement('li');
+        //         li.classList.add('note');
+        //         li.textContent = note;
+        //         li.onclick = () => showSummaryPage(note);
+        //         notesList.appendChild(li);
+        //     });
+        // }
+        
+
+        // New function to show summary page
+        function showSummaryPage(note) {
+            document.getElementById('summaryPage').style.display = 'flex';
+            document.getElementById('summaryContent').textContent = 'Fetching summary...';
+            
+            // Call Gemini API to get summary
+            fetchSummary(note);
+        }
+
+        // Function to close summary page
+        function closeSummaryPage() {
+            document.getElementById('summaryPage').style.display = 'none';
+        }
+
+        // Function to fetch summary from Gemini API
+        async function fetchSummary(note) {
+            // Replace 'YOUR_API_KEY' with your actual Gemini API key
+            
+
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Summarize the following note: ${note}`
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                const summary = data.candidates[0].content.parts[0].text;
+                document.getElementById('summaryContent').textContent = summary;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('summaryContent').textContent = 'Failed to fetch summary. Please try again.';
+            }
+        }
+
+        async function generateFlashcardWithGemini(note) {
+
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Create a flashcard from the following note. The flashcard should have a question on one side and the answer on the other. The question should test a key concept from the note, and the answer should be concise but informative. Format the response as plain text with "Question:" and "Answer:" prefixes. Here's the note: ${note}`
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                const generatedText = data.candidates[0].content.parts[0].text;
+                
+                // Parse the generated text into question and answer
+                const lines = generatedText.split('\n');
+                let question = '';
+                let answer = '';
+                
+                for (const line of lines) {
+                    if (line.startsWith('Question:')) {
+                        question = line.replace('Question:', '').trim();
+                    } else if (line.startsWith('Answer:')) {
+                        answer = line.replace('Answer:', '').trim();
+                    }
+                }
+
+                return { question, answer };
+            } catch (error) {
+                console.error('Error:', error);
+                return { 
+                    question: 'Error generating flashcard', 
+                    answer: 'Failed to generate flashcard. Please try again.' 
+                };
+            }
+        }
+
+        async function createFlashcard() {
+            const note = folders[currentFolder][currentNoteIndex];
+            const flashcard = await generateFlashcardWithGemini(note);
+            displayFlashcardPopup(flashcard);
+        }
+
+        function displayFlashcardPopup(flashcard) {
+            document.getElementById('flashcardQuestion').textContent = flashcard.question;
+            document.getElementById('flashcardAnswer').textContent = flashcard.answer;
+            document.getElementById('flashcardPopup').style.display = 'flex';
+        }
+
+        function closeFlashcardPopup() {
+            document.getElementById('flashcardPopup').style.display = 'none';
+        }
+
+        async function generateQuestions() {
+            const note = folders[currentFolder][currentNoteIndex];
+            const questions = await generateQuestionsWithGemini(note);
+            displayQuestionsPopup(questions);
+        }
+
+        async function generateQuestionsWithGemini(note) {
+          
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Generate 5 questions based on the following note. Each question should test understanding of a key concept from the note. Format the response as a numbered list, with each question on a new line. Here's the note: ${note}`
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                const generatedText = data.candidates[0].content.parts[0].text;
+                
+                // Parse the generated text into an array of questions
+                const questions = generatedText.split('\n')
+                    .filter(line => line.trim() !== '')
+                    .map(line => line.replace(/^\d+\.\s*/, '').trim());
+
+                return questions;
+            } catch (error) {
+                console.error('Error:', error);
+                return ['Error generating questions. Please try again.'];
+            }
+        }
+
+        function displayQuestionsPopup(questions) {
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = ''; // Clear previous questions
+            
+            questions.forEach(question => {
+                const li = document.createElement('li');
+                li.textContent = question;
+                questionsList.appendChild(li);
+            });
+
+            document.getElementById('questionsPopup').style.display = 'flex';
+        }
+
+        function closeQuestionsPopup() {
+            document.getElementById('questionsPopup').style.display = 'none';
+        }
+
+    </script>
+</body>
+</html>

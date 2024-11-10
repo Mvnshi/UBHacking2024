@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindBox.study - Syllabus Analyzer & Class Planner</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <style>
+        :root {
+            --background: #e0e5ec;
+            --text-primary: #2d4263;
+            --neu-shadow: 
+                8px 8px 15px #a3b1c6,
+                -8px -8px 15px #ffffff;
+            --neu-shadow-inset:
+                inset 4px 4px 8px #a3b1c6,
+                inset -4px -4px 8px #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        nav {
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--neu-shadow);
+            margin-bottom: 2rem;
+            border-radius: 15px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            box-shadow: var(--neu-shadow-inset);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section {
+            background: var(--background);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--neu-shadow);
+        }
+
+        h2 {
+            margin-bottom: 1rem;
+        }
+
+        input[type="file"], button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background: var(--background);
+            box-shadow: var(--neu-shadow);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:hover, button:hover {
+            box-shadow: var(--neu-shadow-inset);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        #gradeTable input {
+            width: 100%;
+            padding: 0.25rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        #predictedGrade {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav style="background-color: #ffffff;">
+        <div class="logo"><a href="/index.html" style="color: #2d4263; font-style: normal; text-decoration: none;">MindBox.study</a></div>
+        <div class="nav-links">
+            <a href="newnotes.html">Take Note</a>
+            <a href="view-notes.html">View Notes</a>
+            <a href="graph.html">Mind Map</a>
+            <a href="/TimeManagement/Time.html">Study Clock</a>
+            <a href="/sylabus.html">Sylabus Scanner</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="section" id="syllabusUpload">
+            <h2>Syllabus Analyzer</h2>
+            <input type="file" id="syllabusFile" accept=".pdf,.doc,.docx,.txt">
+            <button onclick="analyzeSyllabus()">Analyze Syllabus</button>
+            <div id="analysisResult"></div>
+        </section>
+
+        <section class="section" id="calendarIntegration">
+            <h2>Calendar Integration</h2>
+            <button onclick="authenticateGoogle()">Connect Google Calendar</button>
+            <button onclick="authenticateOutlook()">Connect Outlook Calendar</button>
+            <div id="calendarEvents"></div>
+        </section>
+
+        <section class="section" id="gradeCalculator">
+            <h2>Grade Calculator</h2>
+            <table id="gradeTable">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Weight (%)</th>
+                        <th>Grade (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Grade categories will be dynamically added here -->
+                </tbody>
+            </table>
+            <button onclick="addGradeCategory()">Add Category</button>
+            <div id="predictedGrade"></div>
+        </section>
+    </div>
+
+    <script>
+        const API_KEY = 'AIzaSyBRFZzymHRj-kdrBOsoHTvfT7ZlK0QLtlI';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+
+        async function analyzeSyllabus() {
+          const fileInput = document.getElementById('syllabusFile');
+          const file = fileInput.files[0];
+          if (!file) {
+            alert('Please select a syllabus file');
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async function(e) {
+            const fileContent = e.target.result;
+            const prompt = `
+              Analyze this syllabus and extract the following information:
+              1. Key dates for exams, quizzes, and assignment deadlines
+              2. Grading structure (categories and their weights)
+              Format the output as JSON with the following structure:
+              {
+                "key_dates": [
+                  {"event": "event_name", "date": "YYYY-MM-DD"}
+                ],
+                "grading_structure": [
+                  {"category": "category_name", "weight": percentage}
+                ]
+              }
+            `;
+
+            try {
+              const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  contents: [
+                    {
+                      parts: [
+                        { text: fileContent },
+                        { text: prompt }
+                      ]
+                    }
+                  ]
+                })
+              });
+
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const data = await response.json();
+              const generatedText = data.candidates[0].content.parts[0].text;
+
+              // Find the JSON object within the generated text
+              const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const analysisResult = JSON.parse(jsonMatch[0]);
+                displayAnalysisResult(analysisResult);
+              } else {
+                throw new Error('No valid JSON found in the response');
+              }
+            } catch (error) {
+              console.error('Error analyzing syllabus:', error);
+              alert('Error analyzing syllabus. Please try again.');
+            }
+          };
+          reader.readAsText(file);
+        }
+        
+        
+        function displayAnalysisResult(result) {
+            const analysisDiv = document.getElementById('analysisResult');
+            analysisDiv.innerHTML = '<h3>Analysis Results:</h3>';
+
+            // Display important dates
+            if (result.key_dates && result.key_dates.length > 0) {
+                const datesList = document.createElement('ul');
+                result.key_dates.forEach(date => {
+                    const li = document.createElement('li');
+                    li.textContent = `${date.event}: ${date.date}`;
+                    datesList.appendChild(li);
+                });
+                analysisDiv.appendChild(datesList);
+            }
+
+            // Display grading information
+            if (result.grading_structure) {
+                const gradeTable = document.getElementById('gradeTable').getElementsByTagName('tbody')[0];
+                gradeTable.innerHTML = ''; // Clear existing rows
+                result.grading_structure.forEach(item => {
+                    addGradeCategory(item.category, item.weight);
+                });
+            }
+        }
+
+        function authenticateGoogle() {
+            // Implement Google Calendar authentication
+            console.log('Google Calendar authentication not implemented in this example');
+        }
+
+        function authenticateOutlook() {
+            // Implement Outlook authentication
+            console.log('Outlook authentication not implemented in this example');
+        }
+
+        function addGradeCategory(category = '', weight = '') {
+            const gradeTable = document.getElementById('gradeTable').getElementsByTagName('tbody')[0];
+            const newRow = gradeTable.insertRow();
+            newRow.innerHTML = `
+                <td><input type="text" value="${category}" onchange="updateGrade()"></td>
+                <td><input type="number" value="${weight}" min="0" max="100" onchange="updateGrade()"></td>
+                <td><input type="number" min="0" max="100" onchange="updateGrade()"></td>
+            `;
+            updateGrade();
+        }
+
+        function updateGrade() {
+            const gradeTable = document.getElementById('gradeTable').getElementsByTagName('tbody')[0];
+            let totalWeight = 0;
+            let weightedGrade = 0;
+
+            for (let row of gradeTable.rows) {
+                const weight = parseFloat(row.cells[1].getElementsByTagName('input')[0].value) || 0;
+                const grade = parseFloat(row.cells[2].getElementsByTagName('input')[0].value) || 0;
+                
+                totalWeight += weight;
+                weightedGrade += (weight / 100) * grade;
+            }
+
+            const predictedGrade = totalWeight > 0 ? weightedGrade / (totalWeight / 100) : 0;
+            document.getElementById('predictedGrade').textContent = `Predicted Grade: ${predictedGrade.toFixed(2)}%`;
+        }
+
+        // Initialize the grade table with some default categories
+        window.onload = () => {
+            addGradeCategory('Assignments', 30);
+            addGradeCategory('Midterm', 30);
+            addGradeCategory('Final Exam', 40);
+        };
+    </script>
+</body>
+</html>
