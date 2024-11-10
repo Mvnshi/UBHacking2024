@@ -59,7 +59,7 @@ def take_note():
 
 @app.route('/view-note')
 def view_note():
-    return render_template('notes.html')
+    return render_template('view-notes.html')
 
 @app.route('/mind-map')
 def mind_map():
