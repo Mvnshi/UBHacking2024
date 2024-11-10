@@ -1,9 +1,15 @@
 # config.py
+import os
+from dotenv import load_dotenv
 
-AUTH0_CLIENT_ID = 'jMezGV5GYPePEuViLihSwdjwaVki4HdX'
-AUTH0_CLIENT_SECRET = 'Vvx2E_JLOmwUhRgzLjlMBEFiTk-Jerma03XaEBR_ycwRNBV1sGo5p-mIBuhaEsJE'
-AUTH0_DOMAIN = 'dev-61vgsjd46bv364e1.us.auth0.com'
-AUTH0_CALLBACK_URL = 'http://localhost:5000/callback'
-AUTH0_AUDIENCE = None  # Set to None as desired
+# Load environment variables from .env file
+load_dotenv()
+
+AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID')
+AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET')
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN')
+AUTH0_CALLBACK_URL = os.getenv('AUTH0_CALLBACK_URL')
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE') or None
 DISCOVERY_URL = f'https://{AUTH0_DOMAIN}/.well-known/openid-configuration'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
